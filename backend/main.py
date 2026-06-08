@@ -96,7 +96,16 @@ async def parse_resume_endpoint(file: UploadFile = File(...)):
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
+        error_msg = str(e)
+        if "429" in error_msg or "rate_limit_exceeded" in error_msg:
+            import re
+            time_match = re.search(r"Please try again in ([\w\d.]+)", error_msg)
+            wait_time = time_match.group(1).rstrip('.') if time_match else "a short while"
+            raise HTTPException(
+                status_code=429, 
+                detail=f"The model is on a cooling period due to token limits. Please try again in {wait_time} when the token resets."
+            )
+        raise HTTPException(status_code=500, detail=f"Parsing failed: {error_msg}")
     finally:
         # Clean up temp file
         if os.path.exists(tmp_path):
@@ -140,7 +149,16 @@ async def match_jobs_endpoint(request: MatchRequest):
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Matching failed: {str(e)}")
+        error_msg = str(e)
+        if "429" in error_msg or "rate_limit_exceeded" in error_msg:
+            import re
+            time_match = re.search(r"Please try again in ([\w\d.]+)", error_msg)
+            wait_time = time_match.group(1).rstrip('.') if time_match else "a short while"
+            raise HTTPException(
+                status_code=429, 
+                detail=f"The model is on a cooling period due to token limits. Please try again in {wait_time} when the token resets."
+            )
+        raise HTTPException(status_code=500, detail=f"Matching failed: {error_msg}")
 
 
 # ── Run ──────────────────────────────────────────────────────────
